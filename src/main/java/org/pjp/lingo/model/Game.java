@@ -1,5 +1,5 @@
 package org.pjp.lingo.model;
 
-public record Game(String user, Category category,  boolean frenchToEnglish, int difficulty) {
+public record Game(String categoryName,  boolean frenchToEnglish, int difficulty) {
 
 }

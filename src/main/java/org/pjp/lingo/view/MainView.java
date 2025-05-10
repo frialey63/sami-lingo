@@ -1,5 +1,6 @@
 package org.pjp.lingo.view;
 
+import org.pjp.lingo.model.Game;
 import org.pjp.lingo.service.CategoryService;
 
 import com.vaadin.flow.component.UI;
@@ -32,15 +33,23 @@ import com.vaadin.flow.router.Route;
 @Route
 public class MainView extends VerticalLayout implements AfterNavigationObserver {
 
+    private static final String ENGLISH_TO_FRENCH = "English to French";
+
+    private static final String FRENCH_TO_ENGLISH = "French to English";
+
     private static final long serialVersionUID = 4600732259441217958L;
 
     private static boolean isEmptyString(String string) {
         return string == null || string.isEmpty();
     }
 
-    private final TextField txtName = new TextField("Your name");
+    private final TextField txtUser = new TextField("Your name");
 
     private final Select<String> selCategory = new Select<>();
+
+    private final RadioButtonGroup<String> rbgDirection = new RadioButtonGroup<>();
+
+    private final IntegerField fldDifficulty = new IntegerField();
 
     private final Button btnPlay = new Button("Play", l -> {
         UI.getCurrent().navigate(PlayView.class);
@@ -57,22 +66,21 @@ public class MainView extends VerticalLayout implements AfterNavigationObserver 
         lblTitle.addClassNames("h1", "color-blue");
 
         btnPlay.setEnabled(false);
+        btnPlay.addClickListener(l -> play());
 
         Button btnReset = new Button("Reset Game");
 
-        txtName.setValueChangeMode(ValueChangeMode.EAGER);
-        txtName.addKeyUpListener(l -> validate());
+        txtUser.setValueChangeMode(ValueChangeMode.EAGER);
+        txtUser.addKeyUpListener(l -> validate());
 
         selCategory.setLabel("Category");
         selCategory.addValueChangeListener(l -> validate());
 
-        RadioButtonGroup<String> rbgDirection = new RadioButtonGroup<>();
         rbgDirection.addThemeVariants(RadioGroupVariant.LUMO_VERTICAL);
         rbgDirection.setLabel("Direction");
-        rbgDirection.setItems("French to English", "English to French");
-        rbgDirection.setValue("French to English");
+        rbgDirection.setItems(FRENCH_TO_ENGLISH, ENGLISH_TO_FRENCH);
+        rbgDirection.setValue(FRENCH_TO_ENGLISH);
 
-        IntegerField fldDifficulty = new IntegerField();
         fldDifficulty.setLabel("Difficulty");
         fldDifficulty.setValue(5);
         fldDifficulty.setStepButtonsVisible(true);
@@ -82,9 +90,21 @@ public class MainView extends VerticalLayout implements AfterNavigationObserver 
         HorizontalLayout buttonsLayout = new HorizontalLayout();
         buttonsLayout.add(btnPlay, btnReset);
 
-        add(lblTitle, txtName, selCategory, rbgDirection, fldDifficulty, buttonsLayout);
+        add(lblTitle, txtUser, selCategory, rbgDirection, fldDifficulty, buttonsLayout);
 
         setDefaultHorizontalComponentAlignment(Alignment.CENTER);
+    }
+
+    private void play() {
+        UI ui = UI.getCurrent();
+
+        boolean frenchToEnglish = FRENCH_TO_ENGLISH.equals(rbgDirection.getValue());
+        Game game = new Game(selCategory.getValue(), frenchToEnglish, fldDifficulty.getValue());
+
+        ui.getSession().setAttribute("user", txtUser.getValue());
+        ui.getSession().setAttribute("game", game);
+
+        ui.navigate(PlayView.class);
     }
 
     @Override
@@ -93,7 +113,7 @@ public class MainView extends VerticalLayout implements AfterNavigationObserver 
     }
 
     private void validate() {
-        boolean valid = !isEmptyString(txtName.getValue()) && !isEmptyString(selCategory.getValue());
+        boolean valid = !isEmptyString(txtUser.getValue()) && !isEmptyString(selCategory.getValue());
 
         btnPlay.setEnabled(valid);
     }

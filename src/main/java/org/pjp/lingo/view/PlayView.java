@@ -1,9 +1,11 @@
 package org.pjp.lingo.view;
 
 import org.pjp.lingo.model.Challenge;
+import org.pjp.lingo.model.Game;
 import org.pjp.lingo.model.Progress;
 import org.pjp.lingo.service.CategoryService;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.html.NativeLabel;
@@ -14,16 +16,12 @@ import com.vaadin.flow.component.radiobutton.RadioGroupVariant;
 import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinSession;
 
 @Route
 public class PlayView extends VerticalLayout implements AfterNavigationObserver {
 
-    /**
-     *
-     */
     private static final long serialVersionUID = 8740422261833804095L;
-
-    private static final String CATEGORY = "Household Chores";
 
     private final NativeLabel lblUser = new NativeLabel();
 
@@ -31,7 +29,7 @@ public class PlayView extends VerticalLayout implements AfterNavigationObserver 
 
     private final NativeLabel lblScore = new NativeLabel();
 
-    private final NativeLabel lblCategory = new NativeLabel(CATEGORY);
+    private final NativeLabel lblCategory = new NativeLabel();
 
     private final RadioButtonGroup<String> rbgQuestion = new RadioButtonGroup<>();
 
@@ -39,7 +37,9 @@ public class PlayView extends VerticalLayout implements AfterNavigationObserver 
 
     private final Button btnSkip = new Button("Skip");
 
-    private final Button btnReset = new Button("Reset Category");
+    private final Button btnReset = new Button("Reset");
+
+    private final Button btnQuit = new Button("Quit");
 
     private final CategoryService categoryService;
 
@@ -51,6 +51,8 @@ public class PlayView extends VerticalLayout implements AfterNavigationObserver 
 
     private int numCorrect;
 
+    private Game game;
+
     public PlayView(CategoryService categoryService) {
         this.categoryService = categoryService;
 
@@ -59,17 +61,10 @@ public class PlayView extends VerticalLayout implements AfterNavigationObserver 
         NativeLabel lblTitle = new NativeLabel("Sami Lingo");
         lblTitle.addClassNames("h1", "color-blue");
 
-        lblUser.setText("User: PAUL");
         lblUser.addClassName("h3");
-
-        lblProgress.setText(formatProgress());
         lblProgress.addClassName("h3");
-
-        lblScore.setText(formatScore());
         lblScore.addClassName("h3");
-
         lblCategory.addClassName("h2");
-        lblCategory.setText(CATEGORY);
 
         rbgQuestion.addThemeVariants(RadioGroupVariant.LUMO_VERTICAL);
 
@@ -82,8 +77,11 @@ public class PlayView extends VerticalLayout implements AfterNavigationObserver 
         btnReset.setEnabled(false);
         btnReset.addClickListener(l -> resetGame());
 
+        btnQuit.setEnabled(false);
+        btnQuit.addClickListener(l -> quitGame());
+
         HorizontalLayout buttonsLayout = new HorizontalLayout();
-        buttonsLayout.add(btnChoose, btnSkip, btnReset);
+        buttonsLayout.add(btnChoose, btnSkip, btnReset, btnQuit);
 
         add(lblTitle, lblUser, lblProgress, lblScore, lblCategory, rbgQuestion, buttonsLayout);
 
@@ -93,15 +91,26 @@ public class PlayView extends VerticalLayout implements AfterNavigationObserver 
 
     @Override
     public void afterNavigation(AfterNavigationEvent event) {
+        VaadinSession session = UI.getCurrent().getSession();
+
+        String user = (String) session.getAttribute("user");
+        game = (Game) session.getAttribute("game");
+
+        lblUser.setText("User: " + user);
+        lblProgress.setText(formatProgress());
+        lblScore.setText(formatScore());
+        lblCategory.setText(game.categoryName());
+
         nextChallenge();
 
         btnChoose.setEnabled(true);
         btnSkip.setEnabled(true);
         btnReset.setEnabled(true);
+        btnQuit.setEnabled(true);
     }
 
     private void nextChallenge() {
-        challenge = categoryService.generateChallenge(CATEGORY, true, 5, progress);
+        challenge = categoryService.generateChallenge(game.categoryName(), game.frenchToEnglish(), game.difficulty(), progress);
 
         if (challenge != null) {
             rbgQuestion.setLabel(challenge.target());
@@ -165,12 +174,27 @@ public class PlayView extends VerticalLayout implements AfterNavigationObserver 
         dialog.open();
     }
 
+    private void quitGame() {
+        ConfirmDialog dialog = new ConfirmDialog();
+        dialog.setHeader("Quit Game");
+        dialog.setText("Are you sure you want to quit the game and lose all progress made in this category?");
+
+        dialog.setCancelable(true);
+
+        dialog.setConfirmText("Ok");
+        dialog.addConfirmListener(l -> {
+            UI.getCurrent().navigate(MainView.class);
+        });
+
+        dialog.open();
+    }
+
     private String formatScore() {
         return String.format("Score: %d \u2713 %d \u2717", numCorrect, numMistakes);
     }
 
     private String formatProgress() {
-        int score = categoryService.calculateProgress(CATEGORY, progress);
+        int score = categoryService.calculateProgress(game.categoryName(), progress);
         return String.format("Progress: %d%%", score);
     }
 

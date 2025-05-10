@@ -16,9 +16,6 @@ import com.vaadin.flow.router.Route;
 @Route
 public class AdminView extends VerticalLayout {
 
-    /**
-     *
-     */
     private static final long serialVersionUID = 8713084370688369200L;
 
     public AdminView(CategoryService categoryService) {
@@ -47,6 +44,7 @@ public class AdminView extends VerticalLayout {
             Category category = categoryService.getCategory(name);
 
             if (category != null) {
+                right.removeAll();
                 category.definitions().forEach(d -> right.add(new Paragraph(d.french() + " = " + d.english())));
             }
         });

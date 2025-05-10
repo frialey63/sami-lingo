@@ -8,6 +8,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.NativeLabel;
 import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.component.textfield.TextField;
@@ -33,7 +34,9 @@ public class AdminView extends VerticalLayout {
         Button btnLoad = new Button("Load Category", e -> {
             String name = txtCategory.getValue();
 
-            categoryService.loadCategory(name);
+            int numberOfDefinitions = categoryService.loadCategory(name);
+
+            Notification.show(String.format("Loaded %d defintions for this category", numberOfDefinitions));
         });
         btnLoad.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         btnLoad.addClickShortcut(Key.ENTER);

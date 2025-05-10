@@ -1,6 +1,5 @@
 package org.pjp.lingo.service;
 
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -17,6 +16,8 @@ import org.pjp.lingo.model.Challenge;
 import org.pjp.lingo.model.Definition;
 import org.pjp.lingo.model.Progress;
 import org.pjp.lingo.storage.CategoryStorage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.opencsv.CSVReader;
@@ -24,6 +25,8 @@ import com.opencsv.exceptions.CsvValidationException;
 
 @Service
 public class CategoryServiceImpl implements CategoryService {
+
+    private static Logger LOGGER = LoggerFactory.getLogger(CategoryServiceImpl.class);
 
     private static final String CSV = ".csv";
 
@@ -41,7 +44,9 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public void loadCategory(String name) {
+    public int loadCategory(String name) {
+        int result = 0;
+
         Path csvFile = Path.of(name + CSV);
 
         try {
@@ -56,23 +61,17 @@ public class CategoryServiceImpl implements CategoryService {
 
             List<Definition> definitions = records.stream().map(l -> new Definition(l.get(0), l.get(1))).toList();
 
-            System.out.println("loaded " + definitions.size() + " definitions from the CSV");
-
             Category category = new Category(name, definitions);
 
             categoryStorage.store(category);
 
-        } catch (CsvValidationException e1) {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
-        } catch (FileNotFoundException e1) {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
-        } catch (IOException e1) {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
+            result = definitions.size();
+
+        } catch (CsvValidationException  | IOException e) {
+            LOGGER.error("Failed to load category", e);
         }
 
+        return result;
     }
 
     @Override
@@ -85,7 +84,6 @@ public class CategoryServiceImpl implements CategoryService {
         Category category = getCategory(name);
 
         if ((category != null) && (numOptions <= category.definitions().size())) {
-
             boolean english = !french;
 
             // generate the target
@@ -107,6 +105,8 @@ public class CategoryServiceImpl implements CategoryService {
 
                 return new Challenge(target.getWord(french), options, answer);
             }
+        } else {
+            LOGGER.warn("Cannot generate a challenge, not enough defintions in this category for the number of options.");
         }
 
         return null;

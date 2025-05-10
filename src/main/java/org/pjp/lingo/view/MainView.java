@@ -51,9 +51,7 @@ public class MainView extends VerticalLayout implements AfterNavigationObserver 
 
     private final IntegerField fldDifficulty = new IntegerField();
 
-    private final Button btnPlay = new Button("Play", l -> {
-        UI.getCurrent().navigate(PlayView.class);
-    });
+    private final Button btnPlay = new Button("Play");
 
     private final CategoryService categoryService;
 
@@ -109,6 +107,12 @@ public class MainView extends VerticalLayout implements AfterNavigationObserver 
 
     @Override
     public void afterNavigation(AfterNavigationEvent event) {
+        String user = (String) UI.getCurrent().getSession().getAttribute("user");
+
+        if (user != null) {
+            txtUser.setValue(user);
+        }
+
         selCategory.setItems(categoryService.list().stream().map(c -> c.name()).toList());
     }
 

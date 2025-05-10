@@ -117,13 +117,12 @@ public class PlayView extends VerticalLayout implements AfterNavigationObserver 
             rbgQuestion.setItems(challenge.options());
         } else {
             ConfirmDialog dialog = new ConfirmDialog();
-            dialog.setHeader("Game Over");
-            dialog.setText("You have finished playing this category.");
+            dialog.setHeader("Category Complete");
+            dialog.setText("Congratulations!, you have finished playing this category.");
 
             dialog.setConfirmText("Ok");
             dialog.addConfirmListener(l -> {
-                btnChoose.setEnabled(false);
-                btnSkip.setEnabled(false);
+                UI.getCurrent().navigate(MainView.class);
             });
 
             dialog.open();

@@ -10,7 +10,7 @@ public interface CategoryService {
 
     List<Category> list();
 
-    void loadCategory(String name);
+    int loadCategory(String name);
 
     Category getCategory(String name);
 

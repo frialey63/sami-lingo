@@ -2,6 +2,7 @@ package org.pjp.lingo.model;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class DataRoot {
 
@@ -15,13 +16,13 @@ public class DataRoot {
         this.categories = categories;
     }
 
-    private Map<String, Game> games = new HashMap<>();
+    private Map<String, Set<Game>> games = new HashMap<>();
 
-    public Map<String, Game> getGames() {
+    public Map<String, Set<Game>> getGames() {
         return games;
     }
 
-    public void setGames(Map<String, Game> games) {
+    public void setGames(Map<String, Set<Game>> games) {
         this.games = games;
     }
 

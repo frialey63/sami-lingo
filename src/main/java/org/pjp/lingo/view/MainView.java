@@ -1,10 +1,18 @@
 package org.pjp.lingo.view;
 
+import static java.util.stream.Collectors.toSet;
+
+import java.util.List;
+import java.util.Set;
+
 import org.pjp.lingo.model.Game;
 import org.pjp.lingo.service.CategoryService;
+import org.pjp.lingo.service.GameService;
 
+import com.google.common.collect.Sets;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.html.NativeLabel;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -18,18 +26,6 @@ import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.Route;
 
-/**
- * A sample Vaadin view class.
- * <p>
- * To implement a Vaadin view just extend any Vaadin component and use @Route
- * annotation to announce it in a URL as a Spring managed bean.
- * <p>
- * A new instance of this class is created for every new user and every browser
- * tab/window.
- * <p>
- * The main view contains a text field for getting the user name and a button
- * that shows a greeting message in a notification.
- */
 @Route
 public class MainView extends VerticalLayout implements AfterNavigationObserver {
 
@@ -39,8 +35,8 @@ public class MainView extends VerticalLayout implements AfterNavigationObserver 
 
     private static final long serialVersionUID = 4600732259441217958L;
 
-    private static boolean isEmptyString(String string) {
-        return string == null || string.isEmpty();
+    private static boolean isEmpty(String string) {
+        return (string == null) || string.isEmpty();
     }
 
     private final TextField txtUser = new TextField("Your name");
@@ -53,9 +49,14 @@ public class MainView extends VerticalLayout implements AfterNavigationObserver 
 
     private final Button btnPlay = new Button("Play");
 
+    private final Button btnReset = new Button("Reset");
+
+    private final GameService gameService;
+
     private final CategoryService categoryService;
 
-    public MainView(CategoryService categoryService) {
+    public MainView(GameService gameService, CategoryService categoryService) {
+        this.gameService = gameService;
         this.categoryService = categoryService;
 
         addClassName("padded-layout");
@@ -66,13 +67,29 @@ public class MainView extends VerticalLayout implements AfterNavigationObserver 
         btnPlay.setEnabled(false);
         btnPlay.addClickListener(l -> play());
 
-        Button btnReset = new Button("Reset Game");
+        btnReset.setEnabled(false);
+        btnReset.addClickListener(l -> reset());
 
         txtUser.setValueChangeMode(ValueChangeMode.EAGER);
-        txtUser.addKeyUpListener(l -> validate());
+        txtUser.addValueChangeListener(l -> {
+            String user = txtUser.getValue();
+
+            boolean resetEnabled = !isEmpty(user);
+            btnReset.setEnabled(resetEnabled);
+
+            if (resetEnabled) {
+                populateCategories(user);
+            }
+
+            boolean playEnabled = resetEnabled && !isEmpty(selCategory.getValue());
+            btnPlay.setEnabled(playEnabled);
+        });
 
         selCategory.setLabel("Category");
-        selCategory.addValueChangeListener(l -> validate());
+        selCategory.addValueChangeListener(l -> {
+            boolean enabled = !isEmpty(txtUser.getValue()) && !isEmpty(selCategory.getValue());
+            btnPlay.setEnabled(enabled);
+        });
 
         rbgDirection.addThemeVariants(RadioGroupVariant.LUMO_VERTICAL);
         rbgDirection.setLabel("Direction");
@@ -93,13 +110,34 @@ public class MainView extends VerticalLayout implements AfterNavigationObserver 
         setDefaultHorizontalComponentAlignment(Alignment.CENTER);
     }
 
+    private void reset() {
+        ConfirmDialog dialog = new ConfirmDialog();
+        dialog.setHeader("Reset All");
+        dialog.setText("Are you sure you want to reset and lose all progress?");
+
+        dialog.setCancelable(true);
+
+        dialog.setConfirmText("Ok");
+        dialog.addConfirmListener(l -> {
+            String user = txtUser.getValue();
+
+            gameService.clearCompleted(user);
+
+            populateCategories(user);
+        });
+
+        dialog.open();
+    }
+
     private void play() {
         UI ui = UI.getCurrent();
 
         boolean frenchToEnglish = FRENCH_TO_ENGLISH.equals(rbgDirection.getValue());
         Game game = new Game(selCategory.getValue(), frenchToEnglish, fldDifficulty.getValue());
 
-        ui.getSession().setAttribute("user", txtUser.getValue());
+        String user = txtUser.getValue();
+
+        ui.getSession().setAttribute("user", user);
         ui.getSession().setAttribute("game", game);
 
         ui.navigate(PlayView.class);
@@ -112,13 +150,34 @@ public class MainView extends VerticalLayout implements AfterNavigationObserver 
         if (user != null) {
             txtUser.setValue(user);
         }
-
-        selCategory.setItems(categoryService.list().stream().map(c -> c.name()).toList());
     }
 
-    private void validate() {
-        boolean valid = !isEmptyString(txtUser.getValue()) && !isEmptyString(selCategory.getValue());
+    private void populateCategories(String user) {
+        if (user == null) {
+            return;
+        }
 
-        btnPlay.setEnabled(valid);
+        Set<String> completedFrenchToEnglish = gameService.getCompleted(user).stream().filter(Game::frenchToEnglish).map(Game::categoryName).collect(toSet());
+        Set<String> completedEnglishToFrench = gameService.getCompleted(user).stream().filter(Game::isEnglishToFrench).map(Game::categoryName).collect(toSet());
+
+        Set<String> completed = Sets.newHashSet(completedFrenchToEnglish);
+        completed.retainAll(completedEnglishToFrench);
+
+        List<String> items = categoryService.listAll().stream().filter(c -> !completed.contains(c.name())).map(c -> c.name()).toList();
+        selCategory.setItems(items);
+
+        if (items.isEmpty()) {
+            ConfirmDialog dialog = new ConfirmDialog();
+            dialog.setHeader("All Categories Complete");
+            dialog.setText("Congratulations!, you have finished playing all categories.");
+
+            dialog.setConfirmText("Ok");
+            dialog.addConfirmListener(l -> {
+                dialog.close();
+            });
+
+            dialog.open();
+        }
     }
+
 }

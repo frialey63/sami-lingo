@@ -4,6 +4,7 @@ import org.pjp.lingo.model.Challenge;
 import org.pjp.lingo.model.Game;
 import org.pjp.lingo.model.Progress;
 import org.pjp.lingo.service.CategoryService;
+import org.pjp.lingo.service.GameService;
 
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -41,6 +42,8 @@ public class PlayView extends VerticalLayout implements AfterNavigationObserver 
 
     private final Button btnQuit = new Button("Quit");
 
+    private final GameService gameService;
+
     private final CategoryService categoryService;
 
     private final Progress progress = new Progress();
@@ -51,9 +54,12 @@ public class PlayView extends VerticalLayout implements AfterNavigationObserver 
 
     private int numCorrect;
 
+    private String user;
+
     private Game game;
 
-    public PlayView(CategoryService categoryService) {
+    public PlayView(GameService gameService, CategoryService categoryService) {
+        this.gameService = gameService;
         this.categoryService = categoryService;
 
         addClassName("padded-layout");
@@ -75,7 +81,7 @@ public class PlayView extends VerticalLayout implements AfterNavigationObserver 
         btnSkip.addClickListener(l -> skip());
 
         btnReset.setEnabled(false);
-        btnReset.addClickListener(l -> resetGame());
+        btnReset.addClickListener(l -> reset());
 
         btnQuit.setEnabled(false);
         btnQuit.addClickListener(l -> quitGame());
@@ -93,20 +99,22 @@ public class PlayView extends VerticalLayout implements AfterNavigationObserver 
     public void afterNavigation(AfterNavigationEvent event) {
         VaadinSession session = UI.getCurrent().getSession();
 
-        String user = (String) session.getAttribute("user");
+        user = (String) session.getAttribute("user");
         game = (Game) session.getAttribute("game");
 
-        lblUser.setText("User: " + user);
-        lblProgress.setText(formatProgress());
-        lblScore.setText(formatScore());
-        lblCategory.setText(game.categoryName());
+        if (user != null) {
+            lblUser.setText("User: " + user);
+            lblProgress.setText(formatProgress());
+            lblScore.setText(formatScore());
+            lblCategory.setText(game.categoryName());
 
-        nextChallenge();
+            nextChallenge();
 
-        btnChoose.setEnabled(true);
-        btnSkip.setEnabled(true);
-        btnReset.setEnabled(true);
-        btnQuit.setEnabled(true);
+            btnChoose.setEnabled(true);
+            btnSkip.setEnabled(true);
+            btnReset.setEnabled(true);
+            btnQuit.setEnabled(true);
+        }
     }
 
     private void nextChallenge() {
@@ -122,6 +130,8 @@ public class PlayView extends VerticalLayout implements AfterNavigationObserver 
 
             dialog.setConfirmText("Ok");
             dialog.addConfirmListener(l -> {
+                gameService.saveCompleted(user, game);
+
                 UI.getCurrent().navigate(MainView.class);
             });
 
@@ -133,29 +143,31 @@ public class PlayView extends VerticalLayout implements AfterNavigationObserver 
         String chosen = rbgQuestion.getValue();
         String wanted = challenge.options().get(challenge.answer());
 
-        if (chosen.equals(wanted)) {
-            String target = rbgQuestion.getLabel();
-            progress.update(target);
+        if (chosen != null) {
+            if (chosen.equals(wanted)) {
+                String target = rbgQuestion.getLabel();
+                progress.update(target);
 
-            numCorrect++;
-        } else {
-            numMistakes++;
+                numCorrect++;
+            } else {
+                numMistakes++;
+            }
+
+            nextChallenge();
+
+            lblProgress.setText(formatProgress());
+            lblScore.setText(formatScore());
         }
-
-        nextChallenge();
-
-        lblProgress.setText(formatProgress());
-        lblScore.setText(formatScore());
     }
 
     private void skip() {
         nextChallenge();
     }
 
-    private void resetGame() {
+    private void reset() {
         ConfirmDialog dialog = new ConfirmDialog();
         dialog.setHeader("Reset Game");
-        dialog.setText("Are you sure you want to reset the game and lose all progress made in this category?");
+        dialog.setText("Are you sure you want to reset game and lose progress made in this game?");
 
         dialog.setCancelable(true);
 

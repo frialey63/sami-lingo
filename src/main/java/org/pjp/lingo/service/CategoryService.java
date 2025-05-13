@@ -8,7 +8,7 @@ import org.pjp.lingo.model.Progress;
 
 public interface CategoryService {
 
-    List<Category> list();
+    List<Category> listAll();
 
     int loadCategory(String name);
 

@@ -39,8 +39,8 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public List<Category> list() {
-        return categoryStorage.list().stream().sorted().toList();
+    public List<Category> listAll() {
+        return categoryStorage.getAll().stream().sorted().toList();
     }
 
     @Override
@@ -54,16 +54,17 @@ public class CategoryServiceImpl implements CategoryService {
 
             try (CSVReader csvReader = new CSVReader(new FileReader(csvFile.toFile()));) {
                 String[] values = null;
+
                 while ((values = csvReader.readNext()) != null) {
                     records.add(Arrays.asList(values));
                 }
             }
 
-            List<Definition> definitions = records.stream().map(l -> new Definition(l.get(0), l.get(1))).toList();
+            List<Definition> definitions = records.stream().map(r -> new Definition(r.get(0), r.get(1))).toList();
 
             Category category = new Category(name, definitions);
 
-            categoryStorage.store(category);
+            categoryStorage.save(category);
 
             result = definitions.size();
 
@@ -86,11 +87,10 @@ public class CategoryServiceImpl implements CategoryService {
         if ((category != null) && (numOptions <= category.definitions().size())) {
             boolean english = !french;
 
-            // generate the target
-
             List<Definition> list = category.definitions().stream().filter(d -> progress.excludes(d.getWord(french))).toList();
 
             if (list.size() > 0) {
+                // generate the target
                 Definition target = list.get(random.nextInt(list.size()));
 
                 // generate the options
@@ -101,6 +101,7 @@ public class CategoryServiceImpl implements CategoryService {
                 List<String> options = Stream.concat(list.stream().limit(numOptions - 1).map(d -> d.getWord(english)), Stream.of(target.getWord(english))).collect(Collectors.toList());
                 Collections.shuffle(options);
 
+                // specify the answer
                 int answer = options.indexOf(target.getWord(english));
 
                 return new Challenge(target.getWord(french), options, answer);

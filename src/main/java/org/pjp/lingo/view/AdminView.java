@@ -19,38 +19,31 @@ public class AdminView extends VerticalLayout {
 
     private static final long serialVersionUID = 8713084370688369200L;
 
+    private static boolean isEmpty(String string) {
+        return (string == null) || string.isEmpty();
+    }
+
+    private TextField txtCategory = new TextField("Category");
+
+    private VerticalLayout left = new VerticalLayout();
+
+    private VerticalLayout right = new VerticalLayout();
+
+    private final CategoryService categoryService;
+
     public AdminView(CategoryService categoryService) {
+        this.categoryService = categoryService;
 
         addClassName("padded-layout");
 
         NativeLabel lblTitle = new NativeLabel("Sami Lingo");
         lblTitle.addClassNames("h1", "color-blue");
 
-        VerticalLayout left = new VerticalLayout();
-        VerticalLayout right = new VerticalLayout();
-
-        TextField txtCategory = new TextField("Category");
-
-        Button btnLoad = new Button("Load Category", e -> {
-            String name = txtCategory.getValue();
-
-            int numberOfDefinitions = categoryService.loadCategory(name);
-
-            Notification.show(String.format("Loaded %d defintions for this category", numberOfDefinitions));
-        });
+        Button btnLoad = new Button("Load Category", e -> loadCategory());
         btnLoad.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         btnLoad.addClickShortcut(Key.ENTER);
 
-        Button btnList = new Button("List Category", e -> {
-            String name = txtCategory.getValue();
-
-            Category category = categoryService.getCategory(name);
-
-            if (category != null) {
-                right.removeAll();
-                category.definitions().forEach(d -> right.add(new Paragraph(d.french() + " = " + d.english())));
-            }
-        });
+        Button btnList = new Button("List Category", e -> listCategory());
         btnList.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         btnList.addClickShortcut(Key.ENTER);
 
@@ -62,5 +55,27 @@ public class AdminView extends VerticalLayout {
         add(lblTitle, splitLayout);
         setDefaultHorizontalComponentAlignment(Alignment.CENTER);
         setHorizontalComponentAlignment(Alignment.STRETCH, splitLayout);
+    }
+
+    private void listCategory() {
+        String name = txtCategory.getValue();
+
+        if (!isEmpty(name)) {
+            Category category = categoryService.getCategory(name);
+
+            if (category != null) {
+                right.removeAll();
+                category.definitions().forEach(d -> right.add(new Paragraph(d.french() + " = " + d.english())));
+            }
+        }
+    }
+
+    private void loadCategory() {
+        String name = txtCategory.getValue();
+
+        if (!isEmpty(name)) {
+            int numberOfDefinitions = categoryService.loadCategory(name);
+            Notification.show(String.format("Loaded %d defintions for this category", numberOfDefinitions));
+        }
     }
 }

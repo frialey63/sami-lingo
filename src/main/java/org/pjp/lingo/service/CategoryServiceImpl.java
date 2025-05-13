@@ -18,6 +18,7 @@ import org.pjp.lingo.model.Progress;
 import org.pjp.lingo.storage.CategoryStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.opencsv.CSVReader;
@@ -29,6 +30,9 @@ public class CategoryServiceImpl implements CategoryService {
     private static Logger LOGGER = LoggerFactory.getLogger(CategoryServiceImpl.class);
 
     private static final String CSV = ".csv";
+
+    @Value("${data.dir}")
+    private String dataDir;
 
     private final CategoryStorage categoryStorage;
 
@@ -47,7 +51,7 @@ public class CategoryServiceImpl implements CategoryService {
     public int loadCategory(String name) {
         int result = 0;
 
-        Path csvFile = Path.of(name + CSV);
+        Path csvFile = Path.of(dataDir, name + CSV);
 
         try {
             List<List<String>> records = new ArrayList<List<String>>();

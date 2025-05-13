@@ -6,6 +6,7 @@ import org.eclipse.serializer.reflect.ClassLoaderProvider;
 import org.eclipse.store.storage.embedded.types.EmbeddedStorage;
 import org.eclipse.store.storage.embedded.types.EmbeddedStorageManager;
 import org.pjp.lingo.model.DataRoot;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -15,10 +16,10 @@ public class StorageManager {
 
     private final EmbeddedStorageManager storageManager;
 
-    public StorageManager() {
+    public StorageManager(@Value("${data.dir}") String dataDir) {
         super();
 
-        storageManager = EmbeddedStorage.Foundation(Paths.get(DATABASE_NAME)).onConnectionFoundation(cf -> cf
+        storageManager = EmbeddedStorage.Foundation(Paths.get(dataDir, DATABASE_NAME)).onConnectionFoundation(cf -> cf
                 .setClassLoaderProvider(ClassLoaderProvider.New(Thread.currentThread().getContextClassLoader())))
                 .start();
 

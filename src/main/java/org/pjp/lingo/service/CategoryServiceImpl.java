@@ -56,7 +56,7 @@ public class CategoryServiceImpl implements CategoryService {
         try {
             List<List<String>> records = new ArrayList<List<String>>();
 
-            try (CSVReader csvReader = new CSVReader(new FileReader(csvFile.toFile()));) {
+            try (CSVReader csvReader = new CSVReader(new FileReader(csvFile.toFile()))) {
                 String[] values = null;
 
                 while ((values = csvReader.readNext()) != null) {
